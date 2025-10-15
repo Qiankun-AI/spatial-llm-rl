@@ -197,6 +197,80 @@ def geoloc_euclidean_reward_function(
         return 0.0
 
 
+
+def geoloc_haversine_reward_function(
+    data_source: str, 
+    solution_str: str, 
+    ground_truth: Union[str, dict], 
+    extra_info: Optional[dict] = None,
+    use_haversine: bool = False,
+    max_distance: float = 1.0,
+    distance_penalty_factor: float = 1.0
+) -> float:
+    """
+    基于欧式距离的geoloc reward函数
+    
+    Args:
+        data_source: 数据源标识
+        solution_str: 模型生成的解决方案字符串
+        ground_truth: 真实的坐标，可以是字符串或字典格式
+        extra_info: 额外信息
+        use_haversine: 是否使用haversine距离而不是欧式距离
+        max_distance: 最大距离阈值，超过此距离reward为0
+        distance_penalty_factor: 距离惩罚因子
+        
+    Returns:
+        reward值，范围[0, 1]，距离越近reward越高
+    """
+    try:
+        # 从solution_str中提取预测坐标
+        pred_coords = extract_coordinates(solution_str)
+        if pred_coords is None:
+            return 0.0
+        
+        # 解析ground_truth坐标
+        true_coords = None
+        if isinstance(ground_truth, str):
+            true_coords = extract_coordinates(ground_truth)
+        elif isinstance(ground_truth, dict):
+            if 'latitude' in ground_truth and 'longitude' in ground_truth:
+                true_coords = (float(ground_truth['latitude']), float(ground_truth['longitude']))
+            elif 'lat' in ground_truth and 'lon' in ground_truth:
+                true_coords = (float(ground_truth['lat']), float(ground_truth['lon']))
+            elif 'coordinates' in ground_truth:
+                coords = ground_truth['coordinates']
+                if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+                    true_coords = (float(coords[0]), float(coords[1]))
+        
+        if true_coords is None:
+            return 0.0
+        
+        # 计算距离
+        # if use_haversine:
+        distance = calculate_haversine_distance(pred_coords, true_coords)
+        # 对于haversine距离，max_distance单位是公里
+        if max_distance < 1:
+            max_distance = max_distance * 111.0  # 将度转换为大致的公里数
+        # else:
+        #     distance = calculate_euclidean_distance(pred_coords, true_coords)
+        
+        # 如果距离超过阈值，返回0
+        if distance > max_distance:
+            return 0.0
+        
+        # 计算基于距离的reward
+        # reward = exp(-distance * penalty_factor)
+        # 这样距离为0时reward为1，距离越大reward越小
+        reward = math.exp(-distance * distance_penalty_factor)
+        
+        return float(reward)
+        
+    except Exception as e:
+        print(f"Error in geoloc_euclidean_reward_function: {e}")
+        print(f"solution_str: {solution_str}")
+        print(f"ground_truth: {ground_truth}")
+        return 0.0
+
 def geoloc_distance_reward_function(
     data_source: str, 
     solution_str: str, 

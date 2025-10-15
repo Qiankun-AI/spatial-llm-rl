@@ -28,13 +28,41 @@ def create_geoloc_prompt(image_path: str = None, context: str = None) -> str:
     """
     创建geoloc任务的提示词
     """
-    base_prompt = (
-        "请根据提供的图像和上下文信息，预测图像拍摄的地理位置。"
-        "请以经纬度坐标的形式给出答案，格式为 (纬度, 经度)。"
-        "请先进行推理分析，然后给出最终的坐标预测。"
-        "推理过程请用 <think> </think> 标签包围。"
-        "最终答案请用坐标格式：(latitude, longitude)"
-    )
+    # base_prompt = (
+    #     "请根据提供的图像和上下文信息，预测图像拍摄的地理位置。"
+    #     "请以经纬度坐标的形式给出答案，格式为 (纬度, 经度)。"
+    #     "请先进行推理分析，然后给出最终的坐标预测。"
+    #     "推理过程请用 <think> </think> 标签包围。"
+    #     "最终答案请用坐标格式：(latitude, longitude)"
+    # )
+
+    if image_path:
+        base_prompt = (
+        "<image>\n"
+        "Based on the provided image and contextual information, predict the "
+        "geographical location where the image was taken.\n"
+        "Please provide the answer in the form of latitude and longitude "
+        "coordinates, with the format (latitude, longitude).\n"
+        "First, provide a reasoning analysis, and then give the final "
+        "coordinate prediction.\n"
+        "Please enclose the reasoning process within `<think> </think>` tags.\n"
+        "The final answer should use the coordinate format: (latitude, longitude)."
+        )
+    else:
+        base_prompt = (
+        "Based on the contextual information, predict the "
+        "geographical location.\n"
+        "Please provide the answer in the form of latitude and longitude "
+        "coordinates, with the format (latitude, longitude).\n"
+        "First, provide a reasoning analysis, and then give the final "
+        "coordinate prediction.\n"
+        "Please enclose the reasoning process within `<think> </think>` tags.\n"
+        "The final answer should use the coordinate format: (latitude, longitude)."
+        )
+
+# This variable can then be used as the basis for a prompt in an application.
+# For example:
+# print(base_prompt)
     
     if context:
         base_prompt += f"\n\n上下文信息：{context}"
@@ -77,6 +105,11 @@ def process_geoloc_dataset(
     print(f"Loaded {len(df)} samples from {input_file}")
     print(f"Columns: {df.columns.tolist()}")
     
+    # 只取10%的数据进行处理
+    sample_size = int(len(df) * 0.05)
+    df = df.sample(n=sample_size, random_state=42).reset_index(drop=True)
+    print(f"Sampling {sample_size} samples (10% of original data) for processing")
+    
     # 检查必要的列是否存在
     required_columns = [lat_column, lon_column]
     if image_column and image_column not in df.columns:
@@ -98,7 +131,7 @@ def process_geoloc_dataset(
         # 获取图像路径（如果有）
         image_path = None
         if image_column and pd.notna(row[image_column]):
-            image_path = str(row[image_column])
+            image_path = "/mnt/sh/mmvision/home/jonahli/data/global-streetscapes/manual_labels/"+str(row[image_column])
         
         # 获取上下文信息（如果有）
         context = None
@@ -139,7 +172,9 @@ def process_geoloc_dataset(
         
         # 添加图像信息（如果有）
         if image_path:
-            data_item["images"] = [image_path]
+            # data_item["images"] = [image_path]
+            data_item["images"] = [{"image_url": image_path}]
+
         
         # 添加上下文信息到extra_info（如果有）
         if context:

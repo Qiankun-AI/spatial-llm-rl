@@ -8,15 +8,15 @@ REWARD_FUNCTION_PATH="$SCRIPT_DIR/geoloc_reward_function.py"
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
-    data.train_files=$HOME/data/geoloc/train.parquet \
-    data.val_files=$HOME/data/geoloc/test.parquet \
+    data.train_files=/mnt/sh/mmvision/home/jonahli/data_rl/global-streetscapes/train.parquet \
+    data.val_files=/mnt/sh/mmvision/home/jonahli/data_rl/global-streetscapes/test.parquet \
     data.train_batch_size=512 \
     data.max_prompt_length=1024 \
     data.max_response_length=512 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     data.image_key=images \
-    actor_rollout_ref.model.path=Qwen/Qwen2.5-VL-7B-Instruct \
+    actor_rollout_ref.model.path=/mnt/sh/mmvision/home/jonahli/init_ckpt/vllm/Qwen2-VL-7B-Instruct \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.use_fused_kernels=True \
